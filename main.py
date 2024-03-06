@@ -19,7 +19,7 @@ entry_box_x = SCREEN_WIDTH - 300  # Define entry_box_x in the global scope
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Sensor Data Visualization")
 
-csv_file_path = "C:/Users/anisr/Downloads/sensor_data.csv"
+csv_file_path = "Downloads/sensor_data.csv"
 csv_header = ["Voltage", "Current", "Torque1", "Torque2", "Thrust"]
 data_collection_active = False
 # Define fonts and colors
@@ -389,7 +389,6 @@ def save_data_to_csv(data):
             print("Data saved to CSV file.")
     except Exception as e:
         print(f"Error saving data to CSV file: {e}")
-        traceback.print_exc()
 
 
 run = True
