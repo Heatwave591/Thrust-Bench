@@ -10,6 +10,8 @@ HX711 scale1;
 HX711 scale3;
 HX711 scale2;
 
+String msg;
+
 int i;
 float voltage, current;
 
@@ -39,6 +41,12 @@ int delta;
 float throttleValue = 1000.0; // Initial throttle value
 float receivedThrottleValue = 0.0; // Variable to store received throttle value
 
+// Define  limits
+float voltage_limit_min = 0.0;
+float voltage_limit_max = 5.0;  // Adjust the maximum limit based on your application
+float current_limit_min = 0.0;
+float current_limit_max = 10.0; // Adjust the maximum limit based on your application
+
 void finddata() {
   sensorValue = analogRead(analogInputPin);
   potValue = analogRead(potentiometerPin);
@@ -62,25 +70,24 @@ void usedata() {
     motor.writeMicroseconds(1000);
     voltage = 0;
     current = 0;
-  } else {
-    if (Serial.available() > 0) {
-      String command = Serial.readStringUntil('\t');
-      if (command == "SET_THROTTLE") {
-        // Receive and process throttle value from the serial port
-        String throttleString = Serial.readStringUntil('\n');
-        receivedThrottleValue = throttleString.toFloat();
-        if (receivedThrottleValue >= 1049 && receivedThrottleValue <= 1900) {
-          motor.writeMicroseconds(receivedThrottleValue);
-        }
-        else if (receivedThrottleValue >= 1050){
-          motor.writeMicroseconds(1000);
-        }
-        else if (receivedThrottleValue >= 1900){
-          motor.writeMicroseconds(1900);
-        }
-          // Serial.print("Received Throttle Value: ");
-          // Serial.println(receivedThrottleValue);
-        
+  } 
+  if (Serial.available() > 0) {
+  String command = Serial.readStringUntil('\t');
+  if (command == "SET_THROTTLE") {
+    // Receive and process throttle value from the serial port
+    String throttleString = Serial.readStringUntil('\n');
+    receivedThrottleValue = throttleString.toFloat();
+    if (receivedThrottleValue >= 1049 && receivedThrottleValue <= 1900) {
+      motor.writeMicroseconds(receivedThrottleValue);
+    }
+    else if (receivedThrottleValue >= 1050){
+      motor.writeMicroseconds(1000);
+    }
+    else if (receivedThrottleValue >= 1900){
+      motor.writeMicroseconds(1900);
+  
+        // Serial.print("Received Throttle Value: ");
+        // Serial.println(receivedThrottleValue);
       }
     }
   }
@@ -92,8 +99,6 @@ void setup() {
   delay(3000);
 
   motor.writeMicroseconds(1000);
-  // delay(5000);
-  // delay(2000);
 
   scale1.begin(dataPin1, clockPin1);
   scale2.begin(dataPin2, clockPin2);
@@ -120,12 +125,34 @@ void loop() {
       HALT = !HALT;
     }
   }
+  else if (msg.startsWith("LIMITS")) {
+    // Parse and process the limits data
+    int params[4];
+    int count = sscanf(msg.c_str(), "LIMITS\t%d\t%d\t%d\t%d", &params[0], &params[1], &params[2], &params[3]);
+    if (count == 4) {
+      // Assign the parameters to the corresponding variables
+      voltage_limit_min = params[0];
+      voltage_limit_max = params[1];
+      current_limit_min = params[2];
+      current_limit_max = params[3];
+    }
+  }
 
   finddata();
   if (HALT == false) {
     digitalWrite(ERR, LOW);
     digitalWrite(LED, HIGH);
     usedata();
+
+    // Check if values exceed limits
+    if (voltage < voltage_limit_min || voltage > voltage_limit_max ||
+        current < current_limit_min || current > current_limit_max) {
+      // Stop the motor if any value exceeds the limits
+      motor.writeMicroseconds(1000);
+      digitalWrite(ERR, HIGH);
+      digitalWrite(LED,HIGH);
+    }
+
   } else {
     motor.writeMicroseconds(1000);
     digitalWrite(ERR, HIGH);
@@ -138,9 +165,9 @@ void loop() {
     current = 0.0;
     voltage = 0.0;
   }
-  Serial.print(voltage, 2);
+  Serial.print(voltage_limit_min, 2);
   Serial.print("\t");
-  Serial.print(current, 2);
+  Serial.print(voltage_limit_max, 2);
   Serial.print("\t");
   Serial.print(w1);
   Serial.print("\t");
