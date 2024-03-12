@@ -1,6 +1,15 @@
+---
 minThrottle: 1000
 maxThrottle: 2000
 runTime: 60
 mode: step
+...
+---
+mode: step
 interval: 1
 jump: 100
+...
+---
+mode: sine
+...
+---

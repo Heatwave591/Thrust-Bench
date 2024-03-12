@@ -130,7 +130,7 @@ def read_serial_data():
 
 # Function to draw the menu 
 def draw_menu():
-    menu_items = ["General", "Limits", "Graph", "Data Collection"]  # Add "Data Collection" to the menu items
+    menu_items = ["General", "Limits", "Graph", "Data Collection","Custom Setup"]  
     menu_y = 50
     box_width = 200
     box_height = 70
@@ -231,6 +231,21 @@ def handle_data_collection_button_click(x, y):
         choose_save_location()
 
 
+def handle_custom_setup():
+    # Add code here to handle events specific to the "Custom Setup" menu, if needed
+    pass
+
+
+def draw_custom_setup():
+    custom_setup_text = "This is the Custom Setup menu. Add your content here."
+
+    # Draw main text
+    draw_text(custom_setup_text, font, TEXT_COL, 400, 200)
+    for event in pygame.event.get():
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  
+            x, y = event.pos
+            # Add any specific actions for the "Custom Setup" menu here
+
 # Function to draw content in the "Data Collection" menu
 def draw_data_collection():
     global data_collection_active, csv_file_path
@@ -323,9 +338,14 @@ def handle_click(x, y):
         elif 150 <= y <= 220:  # Check if clicked on "General" button within the "Limits" menu
             menu_state = "limits"
             print("Clicked on Limits")
+
+################################################### NOT WORKING ################################################################################
+            
         elif 250 <=y <= 320:  # Checkif clicked on "Graphs" button
             menu_state = "Graph"
             print("Clicked on Graph")
+################################################### NOT WORKING ################################################################################
+            
         elif 350 <= y <= 420:  # Check if clicked on "Data Collection" button
             menu_state = "data_collection"
             print("Clicked on Data Collection")
@@ -355,6 +375,7 @@ def handle_click(x, y):
                 active_entry = (i, j)
                 print("Clicked on entry box:", active_entry)
 
+################################################### NOT WORKING ################################################################################
 def draw_graph():
     graph_data = data_collection_list  # Use the collected data for plotting
     graph_color = (255, 0, 0)  # Red color for the graph line
@@ -378,7 +399,8 @@ def draw_graph():
 
             pygame.draw.line(screen, graph_color, (x1, y1), (x2, y2), graph_thickness)
 
- 
+################################################### NOT WORKING ################################################################################
+            
 # Function to handle entry box events
 def handle_entry_event(event):
     global active_entry
@@ -438,11 +460,9 @@ while run:
                 pass
             elif menu_state == "Graph":
                 draw_graph()
-        if event.type == pygame.QUIT:
-            run = False
-
-    # Read serial data
-    read_serial_data()
+            elif menu_state == "custom_setup":
+                handle_custom_setup()
+    # ...
 
     # Separate drawing loop for improved responsiveness
     screen.fill((52, 78, 91))
@@ -456,13 +476,21 @@ while run:
     elif menu_state == "limits":
         draw_limits_entry_boxes()
     elif menu_state == "data_collection":
-        draw_data_collection()  # Call the function to draw content in the "Data Collection" menu
+        draw_data_collection()
+
+################################################### NOT WORKING ################################################################################
+    elif menu_state == "Graph":
+        draw_graph()
+################################################### NOT WORKING ################################################################################
+
+    elif menu_state == "custom_setup":
+        draw_custom_setup()
 
     draw_menu()
     if data_collection_active:
         data_to_save = [data_values[key] for key in csv_header]
         save_data_to_csv(data_to_save)
-    
+
     pygame.display.update()
 
 pygame.quit()
