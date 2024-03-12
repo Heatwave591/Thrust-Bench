@@ -58,7 +58,9 @@ void finddata() {
     sensorValue = sensorValue + (2 * delta);
   }
   voltage = sensorValue * (5.0 / 1023.0);
-  current = voltage / 0.08;
+  current = voltage / 0.004;
+
+  current = current/10;
 
   w1 = scale1.get_units(10);
   w2 = scale2.get_units(10);
@@ -80,7 +82,7 @@ void usedata() {
     if (receivedThrottleValue >= 1049 && receivedThrottleValue <= 1900) {
       motor.writeMicroseconds(receivedThrottleValue);
     }
-    else if (receivedThrottleValue >= 1050){
+    else if (receivedThrottleValue <= 1050){
       motor.writeMicroseconds(1000);
     }
     else if (receivedThrottleValue >= 1900){
@@ -108,13 +110,13 @@ void setup() {
   pinMode(ERR, OUTPUT);
 
   // Load cell factor calibration; thrust bench
-  scale1.set_scale(125830);
+  scale1.set_scale(114980);
   scale1.tare();
 
   scale2.set_scale(-878);
   scale2.tare();
 
-  scale3.set_scale(150.645);
+  scale3.set_scale(95); // 150.645 for the older sensor
   scale3.tare();
 }
 
@@ -165,9 +167,9 @@ void loop() {
     current = 0.0;
     voltage = 0.0;
   }
-  Serial.print(voltage_limit_min, 2);
+  Serial.print(voltage, 2);
   Serial.print("\t");
-  Serial.print(voltage_limit_max, 2);
+  Serial.print(current, 2);
   Serial.print("\t");
   Serial.print(w1);
   Serial.print("\t");

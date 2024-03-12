@@ -24,7 +24,7 @@ void loop() {
     Serial.println("Tare done...");
     Serial.print("Place a known weight on the scale...");
     delay(5000);
-    long reading = scale.get_units(10);
+    long reading = scale.get_units(10);E
     Serial.print("Result: ");
     // Serial.println(cf);
     Serial.println(reading);

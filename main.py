@@ -2,6 +2,8 @@ import pygame
 import serial
 import csv
 from tkinter import Tk, filedialog
+import time
+import random
 
 # Initialize serial connection
 ser = serial.Serial(port='COM3', baudrate=9600)
@@ -13,13 +15,13 @@ pygame.init()
 # Create game window
 SCREEN_WIDTH = 1520
 SCREEN_HEIGHT = 770
-
+ 
 throttle_entry = ''
 entry_box_x = SCREEN_WIDTH - 300  # Define entry_box_x in the global scope
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Sensor Data Visualization")
 
-csv_file_path = "Downloads/sensor_data.csv"
+csv_file_path = " Downloads/sensor_data.csv"
 csv_header = ["Voltage", "Current", "Torque1", "Torque2", "Thrust"]
 data_collection_active = False
 # Define fonts and colors
@@ -225,7 +227,7 @@ def handle_data_collection_button_click(x, y):
             save_data_to_csv(data_collection_list)
         # Add functionality for Stop Button here
     elif button_x <= x <= button_x + button_width and button_y3 <= y <= button_y3 + button_height:
-        print("Clicked on Choose Save Location Button")
+        print("Clicked on Browse Button")
         choose_save_location()
 
 
@@ -233,7 +235,7 @@ def handle_data_collection_button_click(x, y):
 def draw_data_collection():
     global data_collection_active, csv_file_path
 
-    data_collection_text = "This is the Data Collection menu. Add your content here."
+    data_collection_text = "Date Collection Options"
 
     # Draw main text
     draw_text(data_collection_text, font, TEXT_COL, 400, 200)
@@ -253,7 +255,7 @@ def draw_data_collection():
     draw_text("Stop", font, TEXT_COL, button_x + 10, button_y2 + 10)
 
     pygame.draw.rect(screen, BOX_COLOR, (button_x, button_y3, button_width, button_height), 2)
-    draw_text("Choose Save Location", font, TEXT_COL, button_x + 10, button_y3 + 10)
+    draw_text("Browse...", font, TEXT_COL, button_x + 10, button_y3 + 10)
 
     # Draw data collection status
     draw_text(f"Data Collection Status: {'Active' if data_collection_active else 'Inactive'}", font, TEXT_COL, 400, 550)
@@ -296,7 +298,7 @@ def draw_data_collection():
     draw_text("Stop", font, TEXT_COL, button_x + 10, button_y2 + 10)
 
     pygame.draw.rect(screen, BOX_COLOR, (button_x, button_y3, button_width, button_height), 2)
-    draw_text("Choose Save Location", font, TEXT_COL, button_x + 10, button_y3 + 10)
+    draw_text("Browse...", font, TEXT_COL, button_x + 10, button_y3 + 10)
 
     # Handle button clicks
     for event in pygame.event.get():
@@ -321,6 +323,9 @@ def handle_click(x, y):
         elif 150 <= y <= 220:  # Check if clicked on "General" button within the "Limits" menu
             menu_state = "limits"
             print("Clicked on Limits")
+        elif 250 <=y <= 320:  # Checkif clicked on "Graphs" button
+            menu_state = "Graph"
+            print("Clicked on Graph")
         elif 350 <= y <= 420:  # Check if clicked on "Data Collection" button
             menu_state = "data_collection"
             print("Clicked on Data Collection")
@@ -350,6 +355,30 @@ def handle_click(x, y):
                 active_entry = (i, j)
                 print("Clicked on entry box:", active_entry)
 
+def draw_graph():
+    graph_data = data_collection_list  # Use the collected data for plotting
+    graph_color = (255, 0, 0)  # Red color for the graph line
+    graph_thickness = 2
+
+    # Calculate the maximum and minimum values for scaling the graph
+    max_voltage = max(graph_data, key=lambda x: x[0])[0] if graph_data else 1.0
+    min_voltage = min(graph_data, key=lambda x: x[0])[0] if graph_data else 0.0
+
+    # Draw the graph axes
+    pygame.draw.line(screen, TEXT_COL, (200, 200), (200, 600), 2)  # Vertical axis
+    pygame.draw.line(screen, TEXT_COL, (200, 600), (1200, 600), 2)  # Horizontal axis
+
+    # Draw the graph line
+    if len(graph_data) > 1:
+        for i in range(len(graph_data) - 1):
+            x1 = 200 + i * 20
+            y1 = int(600 - ((graph_data[i][0] - min_voltage) / (max_voltage - min_voltage)) * 400)
+            x2 = 200 + (i + 1) * 20
+            y2 = int(600 - ((graph_data[i + 1][0] - min_voltage) / (max_voltage - min_voltage)) * 400)
+
+            pygame.draw.line(screen, graph_color, (x1, y1), (x2, y2), graph_thickness)
+
+ 
 # Function to handle entry box events
 def handle_entry_event(event):
     global active_entry
@@ -407,13 +436,15 @@ while run:
             elif menu_state == "data_collection":
                 # Handle events specific to the "Data Collection" menu, if needed
                 pass
+            elif menu_state == "Graph":
+                draw_graph()
         if event.type == pygame.QUIT:
             run = False
 
     # Read serial data
     read_serial_data()
 
-# Separate drawing loop for improved responsiveness
+    # Separate drawing loop for improved responsiveness
     screen.fill((52, 78, 91))
     draw_halt_button()
 
