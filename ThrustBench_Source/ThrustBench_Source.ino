@@ -161,7 +161,7 @@ void loop() {
     digitalWrite(LED, HIGH);
   }
 
-  float savedThrottleValue = throttleValue;
+  float savedThrottleValue = throttleValue;  
 
   if(receivedThrottleValue <= 1050){
     current = 0.0;

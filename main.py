@@ -4,6 +4,7 @@ import csv
 from tkinter import Tk, filedialog
 import time
 import random
+import yaml
 
 # Initialize serial connection
 ser = serial.Serial(port='COM3', baudrate=9600)
@@ -232,25 +233,79 @@ def handle_data_collection_button_click(x, y):
 
 
 def handle_custom_setup():
-    # Add code here to handle events specific to the "Custom Setup" menu, if needed
-    pass
+    global menu_state
+    menu_state = "custom_setup"
+
+def choose_yaml_file():
+    global yaml_file_path
+    root = Tk()
+    root.withdraw()  # Hide the main window
+    file_path = filedialog.askopenfilename(filetypes=[("YAML files", "*.yaml"), ("All files", "*.*")])
+    if file_path:
+        yaml_file_path = file_path
+        print("Selected YAML file:", yaml_file_path)
+
+        parameters = read_yaml_parameters(yaml_file_path)
+        send_parameters_to_thrust_bench(parameters)
 
 
+def read_yaml_parameters(path):
+    with open(path, 'r') as yaml_file:
+        yaml_data = yaml.safe_load(yaml_file)
+        return yaml_data
+    
 def draw_custom_setup():
-    custom_setup_text = "This is the Custom Setup menu. Add your content here."
+    custom_setup_text = "Custom Setup: Select your config. file (YAML)."
 
     # Draw main text
     draw_text(custom_setup_text, font, TEXT_COL, 400, 200)
+
+    # Draw a button to choose YAML file
+    button_width = 150
+    button_height = 50
+    button_x = 400
+    button_y = 300
+    pygame.draw.rect(screen, BOX_COLOR, (button_x, button_y, button_width, button_height), 2)
+    draw_text("Browse", font, TEXT_COL, button_x + 10, button_y + 10)
+
+    button_y += 100
+    pygame.draw.rect(screen, BOX_COLOR, (button_x, button_y, button_width, button_height), 2)
+    draw_text("Use", font, TEXT_COL, button_x + 10, button_y + 10)
+
+
+    # Handle button clicks
     for event in pygame.event.get():
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse button
             x, y = event.pos
-            # Add any specific actions for the "Custom Setup" menu here
+            if 400 <= x <= 550 and 300 <= y <= 350:
+                choose_yaml_file()
+
+
+def send_parameters_to_thrust_bench(parameters):
+    try:
+        # Extract parameters from the dictionary
+        min_throttle = parameters['min_throttle']
+        max_throttle = parameters['max_throttle']
+        runtime = parameters['runtime']
+        step_duration = parameters['step_duration']
+        delta = parameters['delta']
+        
+        # Format data and send it to the thrust bench
+        data_to_send = f"PARAMETERS\t{min_throttle}\t{max_throttle}\t{runtime}\t{step_duration}\t{delta}\n"
+        ser.write(data_to_send.encode())
+        
+        print("Parameters sent to the thrust bench:", data_to_send)
+    except KeyError as e:
+        print(f"Error: Missing key in YAML file: {e}")
+    except Exception as e:
+        print(f"Error sending parameters to the thrust bench: {e}")
+
 
 # Function to draw content in the "Data Collection" menu
 def draw_data_collection():
     global data_collection_active, csv_file_path
 
-    data_collection_text = "Date Collection Options"
+    data_collection_text = "Data Collection Options"
 
     # Draw main text
     draw_text(data_collection_text, font, TEXT_COL, 400, 200)
@@ -292,7 +347,7 @@ def choose_save_location():
         print(csv_file_path)
 
 # Function to draw content in the "Data Collection" menu
-def draw_data_collection():
+def draw_data_collection(): 
     data_collection_text = "This is the Data Collection menu. Add your content here."
 
     # Draw main text
@@ -339,43 +394,16 @@ def handle_click(x, y):
             menu_state = "limits"
             print("Clicked on Limits")
 
-################################################### NOT WORKING ################################################################################
-            
-        elif 250 <=y <= 320:  # Checkif clicked on "Graphs" button
+        elif 250 <=y <= 320:  # Check if clicked on "Graphs" button
             menu_state = "Graph"
             print("Clicked on Graph")
-################################################### NOT WORKING ################################################################################
-            
+
         elif 350 <= y <= 420:  # Check if clicked on "Data Collection" button
             menu_state = "data_collection"
             print("Clicked on Data Collection")
-        elif 600 <= y <= 670 and menu_state == "limits":
-            print("Clicked on Send Data")
-            send_data_to_arduino()
+        elif 450 <= y <= 520:  # Check if clicked on "Custom Setup" button
+            handle_custom_setup()
 
-    button_x = 1170
-    button_y = 125
-    if button_x <= x <= button_x + entry_width and button_y <= y <= button_y + entry_height:
-        print("Clicked on Set Throttle button")
-        try:
-            throttle_value = float(throttle_entry)
-            send_throttle_to_arduino(throttle_value)  # Call the function to send the throttle value to Arduino
-            # Perform any necessary actions with the throttle value
-            print(f"Setting throttle to: {throttle_value}")
-        except ValueError:
-            print("Invalid throttle value. Please enter a valid float.")
-
-    for i in range(2):
-        for j in range(2):
-            entry_x_min = entry_x[j]
-            entry_x_max = entry_x[j] + entry_width
-            entry_y_min = entry_y[i]
-            entry_y_max = entry_y[i] + entry_height
-            if entry_x_min <= x <= entry_x_max and entry_y_min <= y <= entry_y_max:
-                active_entry = (i, j)
-                print("Clicked on entry box:", active_entry)
-
-################################################### NOT WORKING ################################################################################
 def draw_graph():
     graph_data = data_collection_list  # Use the collected data for plotting
     graph_color = (255, 0, 0)  # Red color for the graph line
@@ -428,6 +456,7 @@ def handle_entry_event(event):
                 print(f"Current entry box [{i}][{j}]: {entry_text[i][j]}")
             # Update the active entry to the entry currently receiving keyboard input
             active_entry = (i, j)
+################################################### NOT WORKING ################################################################################
 
 def save_data_to_csv(data):
     try:
@@ -463,6 +492,8 @@ while run:
             elif menu_state == "custom_setup":
                 handle_custom_setup()
     # ...
+        elif event.type == pygame.QUIT:
+            run = False
 
     # Separate drawing loop for improved responsiveness
     screen.fill((52, 78, 91))
@@ -477,19 +508,16 @@ while run:
         draw_limits_entry_boxes()
     elif menu_state == "data_collection":
         draw_data_collection()
-
-################################################### NOT WORKING ################################################################################
     elif menu_state == "Graph":
         draw_graph()
-################################################### NOT WORKING ################################################################################
-
     elif menu_state == "custom_setup":
-        draw_custom_setup()
+        draw_custom_setup()  # Call the function to draw custom setup content
 
     draw_menu()
     if data_collection_active:
         data_to_save = [data_values[key] for key in csv_header]
         save_data_to_csv(data_to_save)
+
 
     pygame.display.update()
 
