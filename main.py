@@ -1,10 +1,11 @@
 import pygame
 import serial
 import csv
+import matplotlib.pyplot as plt
 from tkinter import Tk, filedialog
+import yaml
 import time
 import random
-import yaml
 
 # Initialize serial connection
 ser = serial.Serial(port='COM3', baudrate=9600)
@@ -25,6 +26,7 @@ pygame.display.set_caption("Sensor Data Visualization")
 csv_file_path = " Downloads/sensor_data.csv"
 csv_header = ["Voltage", "Current", "Torque1", "Torque2", "Thrust"]
 data_collection_active = False
+
 # Define fonts and colors
 font = pygame.font.SysFont("arialblack", 24)
 TEXT_COL = (255, 255, 255)
@@ -117,9 +119,12 @@ def read_serial_data():
     try:
         if ser.in_waiting > 0 and receive_data:
             data = ser.readline().decode('UTF-8').strip()
+            print("Received data from Arduino:", data)  # Debug statement
             values = [float(value) for value in data.split("\t") if value.strip()]
+            print("Parsed values:", values)  # Debug statement
             if len(values) == 5:
                 data_values["Voltage"], data_values["Current"], data_values["Torque1"], data_values["Torque2"], data_values["Thrust"] = values
+                print("Updated data values:", data_values)
 
                 # Append data to the list when data collection is active
                 if data_collection_active:
@@ -149,6 +154,7 @@ def draw_general_data():
         draw_text(text, font, TEXT_COL, 400, data_y)
         data_y += 100
 
+    draw_throttle_entry()
     # Add an entry box for a custom value on the right side
     entry_box_x = SCREEN_WIDTH - 300  # Adjusted x-coordinate for the right side
     pygame.draw.rect(screen, ENTRY_COLOR, (entry_box_x, data_y1 + 20, entry_width, entry_height), 2)
@@ -183,7 +189,7 @@ def send_data_to_arduino():
         current_max = float(entry_text[1][1])
 
         # Format data and send it to Arduino
-        data_to_send = f"LIMITS\t{voltage_min}\t{voltage_max}\t{current_min}\t{current_max}\n"
+        data_to_send = f"LIMITS {voltage_min} {voltage_max} {current_min} {current_max}"
         ser.write(data_to_send.encode())
 
         print("Data sent to Arduino:", data_to_send)
@@ -193,7 +199,7 @@ def send_data_to_arduino():
 def send_throttle_to_arduino(throttle_value):
     try:
         # Format data and send it to Arduino
-        data_to_send = f"SET_THROTTLE\t{throttle_value}\n"
+        data_to_send = f"SET_THROTTLE {throttle_value}\n"
         ser.write(data_to_send.encode())
         print("Throttle Data sent to Arduino:", data_to_send)
 
@@ -233,79 +239,54 @@ def handle_data_collection_button_click(x, y):
 
 
 def handle_custom_setup():
-    global menu_state
-    menu_state = "custom_setup"
-
-def choose_yaml_file():
-    global yaml_file_path
-    root = Tk()
-    root.withdraw()  # Hide the main window
-    file_path = filedialog.askopenfilename(filetypes=[("YAML files", "*.yaml"), ("All files", "*.*")])
-    if file_path:
-        yaml_file_path = file_path
-        print("Selected YAML file:", yaml_file_path)
-
-        parameters = read_yaml_parameters(yaml_file_path)
-        send_parameters_to_thrust_bench(parameters)
+    # Add code here to handle events specific to the "Custom Setup" menu, if needed
+    pass
 
 
-def read_yaml_parameters(path):
-    with open(path, 'r') as yaml_file:
-        yaml_data = yaml.safe_load(yaml_file)
-        return yaml_data
-    
 def draw_custom_setup():
-    custom_setup_text = "Custom Setup: Select your config. file (YAML)."
+    custom_setup_text = "Custom Setup: Choose config file"
 
     # Draw main text
     draw_text(custom_setup_text, font, TEXT_COL, 400, 200)
 
-    # Draw a button to choose YAML file
-    button_width = 150
-    button_height = 50
-    button_x = 400
-    button_y = 300
-    pygame.draw.rect(screen, BOX_COLOR, (button_x, button_y, button_width, button_height), 2)
-    draw_text("Browse", font, TEXT_COL, button_x + 10, button_y + 10)
+    # Draw "Browse" button
+    browse_button_x = 400
+    browse_button_y = 300
+    pygame.draw.rect(screen, BOX_COLOR, (browse_button_x, browse_button_y, 200, 50), 2)
+    draw_text("Browse", font, TEXT_COL, browse_button_x + 10, browse_button_y + 10)
 
-    button_y += 100
-    pygame.draw.rect(screen, BOX_COLOR, (button_x, button_y, button_width, button_height), 2)
-    draw_text("Use", font, TEXT_COL, button_x + 10, button_y + 10)
-
+    # Draw "Use" button
+    use_button_x = 400
+    use_button_y = 370
+    pygame.draw.rect(screen, BOX_COLOR, (use_button_x, use_button_y, 200, 50), 2)
+    draw_text("Use", font, TEXT_COL, use_button_x + 10, use_button_y + 10)
 
     # Handle button clicks
     for event in pygame.event.get():
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse button
             x, y = event.pos
-            if 400 <= x <= 550 and 300 <= y <= 350:
-                choose_yaml_file()
+            if browse_button_x <= x <= browse_button_x + 200 and browse_button_y <= y <= browse_button_y + 50:
+                print("Clicked on Browse Button")
+                choose_file()  # Call the function to open a file dialog
+            elif use_button_x <= x <= use_button_x + 200 and use_button_y <= y <= use_button_y + 50:
+                print("Clicked on Use Button")
+                # Add functionality for the "Use" button here
 
+def choose_file():
+    root = Tk()
+    root.withdraw()  # Hide the main window
+    file_path = filedialog.askopenfilename(filetypes=[("YAML Files", "*.yaml .yml"), ("All files", "*.*")])
+    if file_path:
+        print("Selected file:", file_path)
+        # Perform actions with the selected file path here
 
-def send_parameters_to_thrust_bench(parameters):
-    try:
-        # Extract parameters from the dictionary
-        min_throttle = parameters['min_throttle']
-        max_throttle = parameters['max_throttle']
-        runtime = parameters['runtime']
-        step_duration = parameters['step_duration']
-        delta = parameters['delta']
-        
-        # Format data and send it to the thrust bench
-        data_to_send = f"PARAMETERS\t{min_throttle}\t{max_throttle}\t{runtime}\t{step_duration}\t{delta}\n"
-        ser.write(data_to_send.encode())
-        
-        print("Parameters sent to the thrust bench:", data_to_send)
-    except KeyError as e:
-        print(f"Error: Missing key in YAML file: {e}")
-    except Exception as e:
-        print(f"Error sending parameters to the thrust bench: {e}")
 
 
 # Function to draw content in the "Data Collection" menu
 def draw_data_collection():
     global data_collection_active, csv_file_path
 
-    data_collection_text = "Data Collection Options"
+    data_collection_text = "Date Collection Options"
 
     # Draw main text
     draw_text(data_collection_text, font, TEXT_COL, 400, 200)
@@ -347,7 +328,7 @@ def choose_save_location():
         print(csv_file_path)
 
 # Function to draw content in the "Data Collection" menu
-def draw_data_collection(): 
+def draw_data_collection():
     data_collection_text = "This is the Data Collection menu. Add your content here."
 
     # Draw main text
@@ -376,6 +357,44 @@ def draw_data_collection():
             x, y = event.pos
             handle_data_collection_button_click(x, y)
 
+def draw_custom_setup():
+    custom_setup_text = "This is the Custom Setup menu. Add your content here."
+
+    # Draw main text
+    draw_text(custom_setup_text, font, TEXT_COL, 400, 200)
+
+    # Draw "Browse" button
+    browse_button_x = 400
+    browse_button_y = 300
+    pygame.draw.rect(screen, BOX_COLOR, (browse_button_x, browse_button_y, 200, 50), 2)
+    draw_text("Browse", font, TEXT_COL, browse_button_x + 10, browse_button_y + 10)
+
+    # Draw "Use" button
+    use_button_x = 400
+    use_button_y = 370
+    pygame.draw.rect(screen, BOX_COLOR, (use_button_x, use_button_y, 200, 50), 2)
+    draw_text("Use", font, TEXT_COL, use_button_x + 10, use_button_y + 10)
+
+    # Handle button clicks
+    for event in pygame.event.get():
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse button
+            x, y = event.pos
+            if browse_button_x <= x <= browse_button_x + 200 and browse_button_y <= y <= browse_button_y + 50:
+                print("Clicked on Browse Button")
+                choose_file()
+
+            elif use_button_x <= x <= use_button_x + 200 and use_button_y <= y <= use_button_y + 50:
+                print("Clicked on Use Button")
+                # Add functionality for the "Use" button here
+
+def choose_file():
+    root = Tk()
+    root.withdraw()  # Hide the main window
+    file_path = filedialog.askopenfilename(filetypes=[("YAML Files", "*.yaml .yml"), ("All files", "*.*")])
+    if file_path:
+        print("Selected file:", file_path)
+        # Perform actions with the selected file path here
+
 def handle_click(x, y):
     global receive_data, menu_state, active_entry, entry_box_x
 
@@ -393,39 +412,71 @@ def handle_click(x, y):
         elif 150 <= y <= 220:  # Check if clicked on "General" button within the "Limits" menu
             menu_state = "limits"
             print("Clicked on Limits")
-
-        elif 250 <=y <= 320:  # Check if clicked on "Graphs" button
+        elif 250 <= y <= 320:  # Check if clicked on "Graphs" button
             menu_state = "Graph"
             print("Clicked on Graph")
-
         elif 350 <= y <= 420:  # Check if clicked on "Data Collection" button
             menu_state = "data_collection"
             print("Clicked on Data Collection")
         elif 450 <= y <= 520:  # Check if clicked on "Custom Setup" button
-            handle_custom_setup()
+            menu_state = "Custom Setup"
+            print("Clicked on Custom Setup")
+        elif 600 <= y <= 670 and menu_state == "limits":
+            print("Clicked on Send Data")
+            send_data_to_arduino()
 
+    button_x = 1170
+    button_y = 125
+    if button_x <= x <= button_x + entry_width and button_y <= y <= button_y + entry_height:
+        print("Clicked on Set Throttle button")
+        try:
+            throttle_value = float(throttle_entry)
+            send_throttle_to_arduino(throttle_value)  # Call the function to send the throttle value to Arduino
+            # Perform any necessary actions with the throttle value
+            print(f"Setting throttle to: {throttle_value}")
+        except ValueError:
+            print("Invalid throttle value. Please enter a valid float.")
+
+    for i in range(2):
+        for j in range(2):
+            entry_x_min = entry_x[j]
+            entry_x_max = entry_x[j] + entry_width
+            entry_y_min = entry_y[i]
+            entry_y_max = entry_y[i] + entry_height
+            if entry_x_min <= x <= entry_x_max and entry_y_min <= y <= entry_y_max:
+                active_entry = (i, j)
+                print("Clicked on entry box:", active_entry)
+
+    # Handle clicks on buttons in the "Custom Setup" menu
+    if menu_state == "Custom Setup":
+        if 400 <= x <= 600 and 300 <= y <= 350:  # Check if clicked on "Browse" button
+            print("Clicked on Browse Button")
+            choose_file()
+        elif 400 <= x <= 600 and 370 <= y <= 420:  # Check if clicked on "Use" button
+            print("Clicked on Use Button")
+            # Add functionality for the "Use" button here
+
+################################################### NOT WORKING ################################################################################
 def draw_graph():
-    graph_data = data_collection_list  # Use the collected data for plotting
-    graph_color = (255, 0, 0)  # Red color for the graph line
-    graph_thickness = 2
+    graph_data = data_collection_list
+    if graph_data:
+        # Extract voltage values for plotting
+        voltage_values = [data[0] for data in graph_data]
 
-    # Calculate the maximum and minimum values for scaling the graph
-    max_voltage = max(graph_data, key=lambda x: x[0])[0] if graph_data else 1.0
-    min_voltage = min(graph_data, key=lambda x: x[0])[0] if graph_data else 0.0
+        # Create figure and axis objects
+        plt.figure(figsize=(10, 6))
+        plt.plot(voltage_values, label='Voltage')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Voltage (V)')
+        plt.title('Voltage vs Time')
+        plt.legend()
 
-    # Draw the graph axes
-    pygame.draw.line(screen, TEXT_COL, (200, 200), (200, 600), 2)  # Vertical axis
-    pygame.draw.line(screen, TEXT_COL, (200, 600), (1200, 600), 2)  # Horizontal axis
+        # Save the plot as an image
+        plt.savefig('graph.png')
 
-    # Draw the graph line
-    if len(graph_data) > 1:
-        for i in range(len(graph_data) - 1):
-            x1 = 200 + i * 20
-            y1 = int(600 - ((graph_data[i][0] - min_voltage) / (max_voltage - min_voltage)) * 400)
-            x2 = 200 + (i + 1) * 20
-            y2 = int(600 - ((graph_data[i + 1][0] - min_voltage) / (max_voltage - min_voltage)) * 400)
-
-            pygame.draw.line(screen, graph_color, (x1, y1), (x2, y2), graph_thickness)
+        # Display the plot on the screen
+        graph_image = pygame.image.load('graph.png')
+        screen.blit(graph_image, (400, 200))
 
 ################################################### NOT WORKING ################################################################################
             
@@ -456,7 +507,6 @@ def handle_entry_event(event):
                 print(f"Current entry box [{i}][{j}]: {entry_text[i][j]}")
             # Update the active entry to the entry currently receiving keyboard input
             active_entry = (i, j)
-################################################### NOT WORKING ################################################################################
 
 def save_data_to_csv(data):
     try:
@@ -473,6 +523,7 @@ def save_data_to_csv(data):
 
 run = True
 while run:
+    read_serial_data()
     # Handle events
     for event in pygame.event.get():
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -481,19 +532,13 @@ while run:
                 handle_click(x, y)
         if event.type == pygame.KEYDOWN:
             if menu_state == "home":
-                handle_general_menu_event(event)
+                handle_general_menu_event(event)  # Call this function for the "General" menu
             elif menu_state == "limits":
                 handle_entry_event(event)
-            elif menu_state == "data_collection":
-                # Handle events specific to the "Data Collection" menu, if needed
-                pass
-            elif menu_state == "Graph":
-                draw_graph()
-            elif menu_state == "custom_setup":
-                handle_custom_setup()
-    # ...
+
         elif event.type == pygame.QUIT:
             run = False
+    # ...
 
     # Separate drawing loop for improved responsiveness
     screen.fill((52, 78, 91))
@@ -501,7 +546,7 @@ while run:
 
     # Draw functions
     if menu_state == "home":
-        draw_general_data()
+        draw_general_data()  # Call the function to draw general data
         draw_set_throttle_button()
         draw_throttle_entry()
     elif menu_state == "limits":
@@ -510,14 +555,16 @@ while run:
         draw_data_collection()
     elif menu_state == "Graph":
         draw_graph()
-    elif menu_state == "custom_setup":
-        draw_custom_setup()  # Call the function to draw custom setup content
+    elif menu_state == "Custom Setup":
+        draw_custom_setup()
+        handle_custom_setup()
+    # Add this part to print the received data for debugging purposes
+    # print("Data values:", data_values)
 
     draw_menu()
     if data_collection_active:
         data_to_save = [data_values[key] for key in csv_header]
         save_data_to_csv(data_to_save)
-
 
     pygame.display.update()
 
