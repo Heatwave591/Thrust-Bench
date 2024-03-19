@@ -270,9 +270,12 @@ def draw_custom_setup():
                 choose_file()  # Call the function to open a file dialog
             elif use_button_x <= x <= use_button_x + 200 and use_button_y <= y <= use_button_y + 50:
                 print("Clicked on Use Button")
+                use_file()
                 # Add functionality for the "Use" button here
 
+
 def choose_file():
+    global file_path
     root = Tk()
     root.withdraw()  # Hide the main window
     file_path = filedialog.askopenfilename(filetypes=[("YAML Files", "*.yaml .yml"), ("All files", "*.*")])
@@ -280,7 +283,10 @@ def choose_file():
         print("Selected file:", file_path)
         # Perform actions with the selected file path here
 
-
+def use_file():
+    with open(file_path, "r") as pp:
+        data = yaml.safe_load(pp)
+        print(data)
 
 # Function to draw content in the "Data Collection" menu
 def draw_data_collection():
@@ -329,7 +335,7 @@ def choose_save_location():
 
 # Function to draw content in the "Data Collection" menu
 def draw_data_collection():
-    data_collection_text = "This is the Data Collection menu. Add your content here."
+    data_collection_text = "This is the Data Collection menu. Add your content here."     
 
     # Draw main text
     draw_text(data_collection_text, font, TEXT_COL, 400, 200)
@@ -454,9 +460,11 @@ def handle_click(x, y):
             choose_file()
         elif 400 <= x <= 600 and 370 <= y <= 420:  # Check if clicked on "Use" button
             print("Clicked on Use Button")
+            with open("D:/Thrust Bench/Thrust-Bench/yamlTesting/Ramp_Normal.yaml", "r") as pp:
+                data = yaml.safe_load(pp)
+                print(data)
             # Add functionality for the "Use" button here
 
-################################################### NOT WORKING ################################################################################
 def draw_graph():
     graph_data = data_collection_list
     if graph_data:
@@ -478,7 +486,6 @@ def draw_graph():
         graph_image = pygame.image.load('graph.png')
         screen.blit(graph_image, (400, 200))
 
-################################################### NOT WORKING ################################################################################
             
 # Function to handle entry box events
 def handle_entry_event(event):

@@ -1,0 +1,9 @@
+mode: 'Trapezoidal'
+min_throttle: 1000
+max_throttle: 2000
+total_duration: 60
+rise_time: 10
+fall_time: 10
+step: -1
+step_duration: -1
+

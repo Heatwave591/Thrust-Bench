@@ -1,0 +1,8 @@
+mode: 'Uniform_Step'
+min_throttle: 1000
+max_throttle: 2000
+total_duration: 60
+rise_time: -1
+fall_time: -1
+step: 35
+step_duration: -1
