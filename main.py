@@ -17,7 +17,7 @@ pygame.init()
 # Create game window
 SCREEN_WIDTH = 1520
 SCREEN_HEIGHT = 770
- 
+
 throttle_entry = ''
 entry_box_x = SCREEN_WIDTH - 300  # Define entry_box_x in the global scope
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -119,12 +119,12 @@ def read_serial_data():
     try:
         if ser.in_waiting > 0 and receive_data:
             data = ser.readline().decode('UTF-8').strip()
-            print("Received data from Arduino:", data)  # Debug statement
+            # print("Received data from Arduino:", data)  # Debug statement
             values = [float(value) for value in data.split("\t") if value.strip()]
-            print("Parsed values:", values)  # Debug statement
+            # print("Parsed values:", values)  # Debug statement
             if len(values) == 5:
                 data_values["Voltage"], data_values["Current"], data_values["Torque1"], data_values["Torque2"], data_values["Thrust"] = values
-                print("Updated data values:", data_values)
+                # print("Updated data values:", data_values)
 
                 # Append data to the list when data collection is active
                 if data_collection_active:
@@ -275,16 +275,19 @@ def draw_custom_setup():
 
 
 def choose_file():
-    global file_path
     root = Tk()
+    global yaml_file_path
     root.withdraw()  # Hide the main window
-    file_path = filedialog.askopenfilename(filetypes=[("YAML Files", "*.yaml .yml"), ("All files", "*.*")])
-    if file_path:
-        print("Selected file:", file_path)
+    yaml_file_path = filedialog.askopenfilename(filetypes=[("YAML Files", "*.yaml .yml"), ("All files", "*.*")])
+    print("Selected file:", yaml_file_path)
+    # with open(yaml_file_path, "r") as pp:
+    #     data = yaml.safe_load(pp)
+    #     print(data)
+
         # Perform actions with the selected file path here
 
 def use_file():
-    with open(file_path, "r") as pp:
+    with open(yaml_file_path, "r") as pp:
         data = yaml.safe_load(pp)
         print(data)
 
@@ -391,15 +394,21 @@ def draw_custom_setup():
 
             elif use_button_x <= x <= use_button_x + 200 and use_button_y <= y <= use_button_y + 50:
                 print("Clicked on Use Button")
+                use_file()
                 # Add functionality for the "Use" button here
 
-def choose_file():
-    root = Tk()
-    root.withdraw()  # Hide the main window
-    file_path = filedialog.askopenfilename(filetypes=[("YAML Files", "*.yaml .yml"), ("All files", "*.*")])
-    if file_path:
-        print("Selected file:", file_path)
-        # Perform actions with the selected file path here
+# def choose_file():
+#     root = Tk()
+#     root.withdraw()  # Hide the main window
+#     file_path = filedialog.askopenfilename(filetypes=[("YAML Files", "*.yaml .yml"), ("All files", "*.*")])
+#     if file_path:
+#         print("Selected file:", file_path)
+#         # Perform actions with the selected file path here
+
+# def use_file():
+#     with open(choose_file.file_path) as pp:
+#         data = yaml.SafeLoader(pp)
+#         print(data)
 
 def handle_click(x, y):
     global receive_data, menu_state, active_entry, entry_box_x
@@ -460,9 +469,7 @@ def handle_click(x, y):
             choose_file()
         elif 400 <= x <= 600 and 370 <= y <= 420:  # Check if clicked on "Use" button
             print("Clicked on Use Button")
-            with open("D:/Thrust Bench/Thrust-Bench/yamlTesting/Ramp_Normal.yaml", "r") as pp:
-                data = yaml.safe_load(pp)
-                print(data)
+            use_file()
             # Add functionality for the "Use" button here
 
 def draw_graph():
