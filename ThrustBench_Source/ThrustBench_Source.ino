@@ -102,9 +102,10 @@ void finddata() {
     sensorValue = sensorValue + (2 * delta);
   }
   voltage = sensorValue * (5.0 / 1023.0);
-  current = voltage / 0.004;
+  voltage = voltage / 4;
+  current = voltage / 0.15;
 
-  current = current / 10;
+  // current = current / 10;
 
   if (voltage < voltage_min || voltage > voltage_max || current < current_min || current > current_max) {
     motor.writeMicroseconds(1000);
