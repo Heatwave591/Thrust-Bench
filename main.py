@@ -5,14 +5,17 @@ import matplotlib.pyplot as plt
 from tkinter import Tk, filedialog
 import yaml
 import numpy as np
-import time
-import random
+from matplotlib import animation
+
 
 # Initialize serial connection
 ser = serial.Serial(port='COM3', baudrate=9600)
 active_entry = (0, 0)  # Initialize active_entry to a default value
 graphlist = []
 
+graph_open = False
+count = 0
+pick = None
 # Initialize Pygame
 pygame.init()
 
@@ -20,7 +23,7 @@ pygame.init()
 SCREEN_WIDTH = 1520
 SCREEN_HEIGHT = 770
 
-pick = 0
+
 throttle_entry = ''
 entry_box_x = SCREEN_WIDTH - 300  # Define entry_box_x in the global scope
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -537,42 +540,21 @@ def handle_click(x, y):
             use_file()
             # Add functionality for the "Use" button here
 
-def plot_dynamic_graph():
-    plt.ion()  # Turn on interactive mode
-    fig, ax = plt.subplots()  # Create figure and axis objects
-    x = []  # Initialize x-axis values
-    y = []  # Initialize y-axis values
 
-    while True:
-        # Assuming graphlist is a continuously updating list
-        print(graphlist[4])
-        print(graphlist[pick])
-        # Append the zeroth value to y-axis
-        # if pick == 0:
-        #     y.append(graphlist[0])
-        # elif pick == 1:
-        #     y.append(graphlist[1])
-        # elif pick == 2:
-        #     y.append(graphlist(2))
-        # elif pick == 3:
-        #     y.append(graphlist[3])
-        # elif pick == 4:
-        #     y.append(graphlist[4])
-        
-        
-        # # Update x-axis with time
-        # x.append(time.time())
-
-        # # Plotting the graph
-        # ax.clear()  # Clear the axis
-        # ax.plot(x, y)  # Plot x and y
-        # ax.set_xlabel('Time')  # Set x-axis label
-        # ax.set_ylabel('Value')  # Set y-axis label
-        # ax.set_title('Dynamic Graph')  # Set title
-        # fig.canvas.draw()  # Draw the canvas
-        # fig.canvas.flush_events()  # Flush the events
-
-        # time.sleep(1)
+def plot_dynamic_graph(pick):
+    global graph_open
+    # if graph_open:
+        # plt.close()  # Close the previous plot if it's open
+    
+    x = np.linspace(0, 10, 100)
+    y = np.sin(x + pick)
+    plt.plot(x, y)
+    plt.xlabel('Time')
+    plt.ylabel('Amplitude')
+    plt.title('Dynamic Plot')
+    plt.grid(True)
+    plt.show()
+    graph_open = True
 
 def draw_graph_buttons():
     button_width = 150
@@ -596,9 +578,10 @@ def draw_graph_buttons():
     pygame.draw.rect(screen, BOX_COLOR, (button_x + 200, button_y + 100, button_width, button_height), 2)
     draw_text("Button 5", font, TEXT_COL, button_x + 210, button_y + 110)
 
-    handle_graph_button_click(x, y)
+
 
 def handle_graph_button_click(x, y):
+    global pick
     button_width = 150
     button_height = 50
     button_x = 400
@@ -607,28 +590,28 @@ def handle_graph_button_click(x, y):
     if button_x <= x <= button_x + button_width and button_y <= y <= button_y + button_height:
         print("Clicked on Button 1")
         pick = 0  # Set data to "Voltage" when Button 1 is clicked
-        plot_dynamic_graph()  # Call plot_dynamic_graph() with "Voltage" as argument
+        plot_dynamic_graph(pick)
 
     elif button_x + 200 <= x <= button_x + 200 + button_width and button_y <= y <= button_y + button_height:
         print("Clicked on Button 2")
         pick = 1  # Set data to "Current" when Button 2 is clicked
-        plot_dynamic_graph()
+        plot_dynamic_graph(pick)
 
     elif button_x + 400 <= x <= button_x + 400 + button_width and button_y <= y <= button_y + button_height:
         print("Clicked on Button 3")
         pick = 2  # Set data to "Torque1" when Button 3 is clicked
-        plot_dynamic_graph()
+        plot_dynamic_graph(pick)
 
     elif button_x <= x <= button_x + button_width and button_y + 100 <= y <= button_y + 100 + button_height:
         print("Clicked on Button 4")
         pick = 3  # Set data to "Torque2" when Button 4 is clicked
-        plot_dynamic_graph()
+        plot_dynamic_graph(pick)
 
     elif button_x + 200 <= x <= button_x + 200 + button_width and button_y + 100 <= y <= button_y + 100 + button_height:
         print("Clicked on Button 5")
         pick = 4  # Set data to "Thrust" when Button 5 is clicked
-        plot_dynamic_graph()
-        
+        plot_dynamic_graph(pick)
+
 def handle_entry_event(event):
     global active_entry
     if event.type == pygame.KEYDOWN:
@@ -683,6 +666,9 @@ while run:
                 handle_general_menu_event(event)  # Call this function for the "General" menu
             elif menu_state == "limits":
                 handle_entry_event(event)
+            
+                
+
         elif event.type == pygame.QUIT:
             run = False
     # ...
@@ -702,6 +688,10 @@ while run:
         draw_data_collection()
     elif menu_state == "Graph":
         draw_graph_buttons()
+        handle_graph_button_click(x, y)
+
+
+
         
         
     elif menu_state == "Custom Setup":
