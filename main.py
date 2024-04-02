@@ -4,19 +4,25 @@ import csv
 import matplotlib.pyplot as plt
 from tkinter import Tk, filedialog
 import yaml
-import time
-import random
+import numpy as np
+from matplotlib import animation
+
 
 # Initialize serial connection
 ser = serial.Serial(port='COM3', baudrate=9600)
 active_entry = (0, 0)  # Initialize active_entry to a default value
+graphlist = []
 
+graph_open = False
+count = 0
+pick = None
 # Initialize Pygame
 pygame.init()
 
 # Create game window
 SCREEN_WIDTH = 1520
 SCREEN_HEIGHT = 770
+
 
 throttle_entry = ''
 entry_box_x = SCREEN_WIDTH - 300  # Define entry_box_x in the global scope
@@ -115,7 +121,7 @@ def draw_text(text, font, text_col, x, y):
 
 # Function to read and process serial data
 def read_serial_data():
-    global receive_data, data_values, data_collection_active, data_collection_list
+    global receive_data, data_values, data_collection_active, data_collection_list, graphlist
     try:
         if ser.in_waiting > 0 and receive_data:
             data = ser.readline().decode('UTF-8').strip()
@@ -125,7 +131,7 @@ def read_serial_data():
             if len(values) == 5:
                 data_values["Voltage"], data_values["Current"], data_values["Torque1"], data_values["Torque2"], data_values["Thrust"] = values
                 # print("Updated data values:", data_values)
-
+                graphlist = values
                 # Append data to the list when data collection is active
                 if data_collection_active:
                     data_collection_list.append(values)
@@ -212,6 +218,7 @@ def send_throttle_to_arduino(throttle_value):
         print("Error: Invalid throttle input.")
 
 
+
 def handle_data_collection_button_click(x, y):
     global data_collection_active, data_collection_list, csv_file_path
 
@@ -261,6 +268,12 @@ def draw_custom_setup():
     pygame.draw.rect(screen, BOX_COLOR, (use_button_x, use_button_y, 200, 50), 2)
     draw_text("Use", font, TEXT_COL, use_button_x + 10, use_button_y + 10)
 
+    # draw "Sample Graph" button
+    graph_button_x = 800
+    graph_button_y = 300
+    pygame.draw.rect(screen, BOX_COLOR, (graph_button_x, graph_button_y, 200, 50), 2)
+    draw_text("Sample Graph", font, TEXT_COL, graph_button_x + 10, graph_button_y + 10)
+
     # Handle button clicks
     for event in pygame.event.get():
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse button
@@ -271,9 +284,58 @@ def draw_custom_setup():
             elif use_button_x <= x <= use_button_x + 200 and use_button_y <= y <= use_button_y + 50:
                 print("Clicked on Use Button")
                 use_file()
+            elif graph_button_x <= x <= graph_button_x + 200 and graph_button_y <= y <= graph_button_y + 50:
+                print("Clicked on Sample Graph Button")
+                plot_throttle_profile(use_file())
                 # Add functionality for the "Use" button here
 
+def plot_throttle_profile(params):
+    def generate_throttle_profile(params):
+        min_throttle = params['min_throttle']
+        max_throttle = params['max_throttle']
+        total_duration = params['total_duration']
+        rise_time = params['rise_time']
+        fall_time = params['fall_time']
+        step = params['step']
+        step_duration = params['step_duration']
 
+        # Generate time array
+        time = np.arange(0, total_duration)  
+        # Initialize throttle profile array
+        throttle_profile = np.full_like(time, min_throttle)
+
+        # Calculate rise and fall rate
+        rise_rate = (max_throttle - min_throttle) / rise_time
+        fall_rate = (max_throttle - min_throttle) / fall_time
+
+        # Apply rise time
+        rise_end_index = int(rise_time / step_duration)
+        throttle_profile[:rise_end_index] = min_throttle + rise_rate * time[:rise_end_index]
+
+        # Apply constant throttle
+        constant_throttle_start_index = rise_end_index
+        constant_throttle_end_index = constant_throttle_start_index + int((total_duration - rise_time - fall_time) / step_duration)
+        throttle_profile[constant_throttle_start_index:constant_throttle_end_index] = max_throttle
+
+        # Apply fall time
+        fall_start_index = constant_throttle_end_index
+        throttle_profile[fall_start_index:] = max_throttle - fall_rate * (time[fall_start_index:] - rise_time - (total_duration - rise_time - fall_time))
+
+        return time, throttle_profile
+
+    
+    # Generate throttle profile
+    time, throttle_profile = generate_throttle_profile(params)
+
+    # Plotting the graph
+    plt.plot(time, throttle_profile)
+    plt.title('Throttle vs Time')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Throttle')
+    plt.grid(True)
+    plt.show()
+
+    
 def choose_file():
     root = Tk()
     global yaml_file_path
@@ -290,12 +352,13 @@ def use_file():
     with open(yaml_file_path, "r") as pp:
         data = yaml.safe_load(pp)
         print(data)
+    return data
 
 # Function to draw content in the "Data Collection" menu
 def draw_data_collection():
     global data_collection_active, csv_file_path
 
-    data_collection_text = "Date Collection Options"
+    data_collection_text = "Data Collection Options"
 
     # Draw main text
     draw_text(data_collection_text, font, TEXT_COL, 400, 200)
@@ -366,35 +429,40 @@ def draw_data_collection():
             x, y = event.pos
             handle_data_collection_button_click(x, y)
 
-def draw_custom_setup():
-    custom_setup_text = "This is the Custom Setup menu. Add your content here."
+# def draw_custom_setup():
+#     custom_setup_text = "This is the Custom Setup menu. Add your content here."
 
-    # Draw main text
-    draw_text(custom_setup_text, font, TEXT_COL, 400, 200)
+#     # Draw main text
+#     draw_text(custom_setup_text, font, TEXT_COL, 400, 200)
 
-    # Draw "Browse" button
-    browse_button_x = 400
-    browse_button_y = 300
-    pygame.draw.rect(screen, BOX_COLOR, (browse_button_x, browse_button_y, 200, 50), 2)
-    draw_text("Browse", font, TEXT_COL, browse_button_x + 10, browse_button_y + 10)
+#     # Draw "Browse" button
+#     browse_button_x = 400
+#     browse_button_y = 300
+#     pygame.draw.rect(screen, BOX_COLOR, (browse_button_x, browse_button_y, 200, 50), 2)
+#     draw_text("Browse", font, TEXT_COL, browse_button_x + 10, browse_button_y + 10)
 
-    # Draw "Use" button
-    use_button_x = 400
-    use_button_y = 370
-    pygame.draw.rect(screen, BOX_COLOR, (use_button_x, use_button_y, 200, 50), 2)
-    draw_text("Use", font, TEXT_COL, use_button_x + 10, use_button_y + 10)
+#     # Draw "Use" button
+#     use_button_x = 400
+#     use_button_y = 370
+#     pygame.draw.rect(screen, BOX_COLOR, (use_button_x, use_button_y, 200, 50), 2)
+#     draw_text("Use", font, TEXT_COL, use_button_x + 10, use_button_y + 10)
 
-    # Handle button clicks
-    for event in pygame.event.get():
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse button
-            x, y = event.pos
-            if browse_button_x <= x <= browse_button_x + 200 and browse_button_y <= y <= browse_button_y + 50:
-                print("Clicked on Browse Button")
-                choose_file()
+#     graph_button_x = 500
+#     graph_button_y = 300
+#     pygame.draw.rect(screen, BOX_COLOR, (graph_button_x, graph_button_y, 200, 50), 2)
+#     draw_text("Sample Graph", font, TEXT_COL, graph_button_x + 10, graph_button_y + 10)
 
-            elif use_button_x <= x <= use_button_x + 200 and use_button_y <= y <= use_button_y + 50:
-                print("Clicked on Use Button")
-                use_file()
+#     # Handle button clicks
+#     for event in pygame.event.get():
+#         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse button
+#             x, y = event.pos
+#             if browse_button_x <= x <= browse_button_x + 200 and browse_button_y <= y <= browse_button_y + 50:
+#                 print("Clicked on Browse Button")
+#                 choose_file()
+
+#             elif use_button_x <= x <= use_button_x + 200 and use_button_y <= y <= use_button_y + 50:
+#                 print("Clicked on Use Button")
+#                 use_file()
                 # Add functionality for the "Use" button here
 
 # def choose_file():
@@ -472,34 +540,83 @@ def handle_click(x, y):
             use_file()
             # Add functionality for the "Use" button here
 
-def draw_graph():
-    graph_data = data_collection_list
-    if graph_data:
-        # Extract voltage values for plotting
-        voltage_values = [data[0] for data in graph_data]
 
-        # Create figure and axis objects
-        plt.figure(figsize=(10, 6))
-        plt.plot(voltage_values, label='Voltage')
-        plt.xlabel('Time (s)')
-        plt.ylabel('Voltage (V)')
-        plt.title('Voltage vs Time')
-        plt.legend()
+def plot_dynamic_graph(pick):
+    global graph_open
+    # if graph_open:
+        # plt.close()  # Close the previous plot if it's open
+    
+    x = np.linspace(0, 10, 100)
+    y = np.sin(x + pick)
+    plt.plot(x, y)
+    plt.xlabel('Time')
+    plt.ylabel('Amplitude')
+    plt.title('Dynamic Plot')
+    plt.grid(True)
+    plt.show()
+    graph_open = True
 
-        # Save the plot as an image
-        plt.savefig('graph.png')
+def draw_graph_buttons():
+    button_width = 150
+    button_height = 50
+    button_x = 400
+    button_y = 200
 
-        # Display the plot on the screen
-        graph_image = pygame.image.load('graph.png')
-        screen.blit(graph_image, (400, 200))
+    # Draw five buttons
+    pygame.draw.rect(screen, BOX_COLOR, (button_x, button_y, button_width, button_height), 2)
+    draw_text("Button 1", font, TEXT_COL, button_x + 10, button_y + 10)
 
-            
-# Function to handle entry box events
+    pygame.draw.rect(screen, BOX_COLOR, (button_x + 200, button_y, button_width, button_height), 2)
+    draw_text("Button 2", font, TEXT_COL, button_x + 210, button_y + 10)
+
+    pygame.draw.rect(screen, BOX_COLOR, (button_x + 400, button_y, button_width, button_height), 2)
+    draw_text("Button 3", font, TEXT_COL, button_x + 410, button_y + 10)
+
+    pygame.draw.rect(screen, BOX_COLOR, (button_x, button_y + 100, button_width, button_height), 2)
+    draw_text("Button 4", font, TEXT_COL, button_x + 10, button_y + 110)
+
+    pygame.draw.rect(screen, BOX_COLOR, (button_x + 200, button_y + 100, button_width, button_height), 2)
+    draw_text("Button 5", font, TEXT_COL, button_x + 210, button_y + 110)
+
+
+
+def handle_graph_button_click(x, y):
+    global pick
+    button_width = 150
+    button_height = 50
+    button_x = 400
+    button_y = 200
+
+    if button_x <= x <= button_x + button_width and button_y <= y <= button_y + button_height:
+        print("Clicked on Button 1")
+        pick = 0  # Set data to "Voltage" when Button 1 is clicked
+        plot_dynamic_graph(pick)
+
+    elif button_x + 200 <= x <= button_x + 200 + button_width and button_y <= y <= button_y + button_height:
+        print("Clicked on Button 2")
+        pick = 1  # Set data to "Current" when Button 2 is clicked
+        plot_dynamic_graph(pick)
+
+    elif button_x + 400 <= x <= button_x + 400 + button_width and button_y <= y <= button_y + button_height:
+        print("Clicked on Button 3")
+        pick = 2  # Set data to "Torque1" when Button 3 is clicked
+        plot_dynamic_graph(pick)
+
+    elif button_x <= x <= button_x + button_width and button_y + 100 <= y <= button_y + 100 + button_height:
+        print("Clicked on Button 4")
+        pick = 3  # Set data to "Torque2" when Button 4 is clicked
+        plot_dynamic_graph(pick)
+
+    elif button_x + 200 <= x <= button_x + 200 + button_width and button_y + 100 <= y <= button_y + 100 + button_height:
+        print("Clicked on Button 5")
+        pick = 4  # Set data to "Thrust" when Button 5 is clicked
+        plot_dynamic_graph(pick)
+
 def handle_entry_event(event):
     global active_entry
     if event.type == pygame.KEYDOWN:
         i, j = active_entry
-
+ 
         # Ensure that the active entry indices are within the valid range
         if i >= len(entry_y):
             active_entry = (len(entry_y) - 1, j)
@@ -549,6 +666,8 @@ while run:
                 handle_general_menu_event(event)  # Call this function for the "General" menu
             elif menu_state == "limits":
                 handle_entry_event(event)
+            
+                
 
         elif event.type == pygame.QUIT:
             run = False
@@ -568,7 +687,13 @@ while run:
     elif menu_state == "data_collection":
         draw_data_collection()
     elif menu_state == "Graph":
-        draw_graph()
+        draw_graph_buttons()
+        handle_graph_button_click(x, y)
+
+
+
+        
+        
     elif menu_state == "Custom Setup":
         draw_custom_setup()
         handle_custom_setup()

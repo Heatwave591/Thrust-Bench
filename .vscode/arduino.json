@@ -1,6 +1,4 @@
 {
-    "configuration": "cpu=atmega2560",
     "board": "arduino:avr:mega",
-    "port": "COM3",
-    "sketch": "ThrustBench_Source\\ThrustBench_Source.ino"
+    "port": "COM3"
 }
