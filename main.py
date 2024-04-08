@@ -465,7 +465,7 @@ def draw_data_collection():
 #                 use_file()
                 # Add functionality for the "Use" button here
 
-# def choose_file():
+ # def choose_file():
 #     root = Tk()
 #     root.withdraw()  # Hide the main window
 #     file_path = filedialog.askopenfilename(filetypes=[("YAML Files", "*.yaml .yml"), ("All files", "*.*")])
@@ -561,7 +561,7 @@ def draw_graph_buttons():
     button_height = 50
     button_x = 400
     button_y = 200
-
+    draw_text("Graph Menu. Interacting with the buttons will display the corresponding graph", font, TEXT_COL, 400, 100)
     # Draw five buttons
     pygame.draw.rect(screen, BOX_COLOR, (button_x, button_y, button_width, button_height), 2)
     draw_text("Button 1", font, TEXT_COL, button_x + 10, button_y + 10)
@@ -578,9 +578,8 @@ def draw_graph_buttons():
     pygame.draw.rect(screen, BOX_COLOR, (button_x + 200, button_y + 100, button_width, button_height), 2)
     draw_text("Button 5", font, TEXT_COL, button_x + 210, button_y + 110)
 
+    print("Buttons drawn")
 
-
-def handle_graph_button_click(x, y):
     global pick
     button_width = 150
     button_height = 50
@@ -590,27 +589,65 @@ def handle_graph_button_click(x, y):
     if button_x <= x <= button_x + button_width and button_y <= y <= button_y + button_height:
         print("Clicked on Button 1")
         pick = 0  # Set data to "Voltage" when Button 1 is clicked
-        plot_dynamic_graph(pick)
+        graphing()
 
     elif button_x + 200 <= x <= button_x + 200 + button_width and button_y <= y <= button_y + button_height:
         print("Clicked on Button 2")
         pick = 1  # Set data to "Current" when Button 2 is clicked
-        plot_dynamic_graph(pick)
+        graphing()
 
     elif button_x + 400 <= x <= button_x + 400 + button_width and button_y <= y <= button_y + button_height:
         print("Clicked on Button 3")
         pick = 2  # Set data to "Torque1" when Button 3 is clicked
-        plot_dynamic_graph(pick)
+        graphing()
 
     elif button_x <= x <= button_x + button_width and button_y + 100 <= y <= button_y + 100 + button_height:
         print("Clicked on Button 4")
         pick = 3  # Set data to "Torque2" when Button 4 is clicked
-        plot_dynamic_graph(pick)
+        graphing()
 
     elif button_x + 200 <= x <= button_x + 200 + button_width and button_y + 100 <= y <= button_y + 100 + button_height:
         print("Clicked on Button 5")
         pick = 4  # Set data to "Thrust" when Button 5 is clicked
-        plot_dynamic_graph(pick)
+        graphing()
+
+def graphing():
+    x = [1,2,3,4,5]
+    y = [5,10,15,20,25]
+    plt.plot(x,y)
+    plt.show()
+
+# def handle_graph_button_click(x, y):
+#     global pick
+#     button_width = 150
+#     button_ height = 50
+#     button_x = 400
+#     button_y = 200
+
+#     if button_x <= x <= button_x + button_width and button_y <= y <= button_y + button_height:
+#         print("Clicked on Button 1")
+#         pick = 0  # Set data to "Voltage" when Button 1 is clicked
+#         graphing()
+
+#     elif button_x + 200 <= x <= button_x + 200 + button_width and button_y <= y <= button_y + button_height:
+#         print("Clicked on Button 2")
+#         pick = 1  # Set data to "Current" when Button 2 is clicked
+#         graphing()
+
+#     elif button_x + 400 <= x <= button_x + 400 + button_width and button_y <= y <= button_y + button_height:
+#         print("Clicked on Button 3")
+#         pick = 2  # Set data to "Torque1" when Button 3 is clicked
+#         graphing()
+
+#     elif button_x <= x <= button_x + button_width and button_y + 100 <= y <= button_y + 100 + button_height:
+#         print("Clicked on Button 4")
+#         pick = 3  # Set data to "Torque2" when Button 4 is clicked
+#         graphing()
+
+#     elif button_x + 200 <= x <= button_x + 200 + button_width and button_y + 100 <= y <= button_y + 100 + button_height:
+#         print("Clicked on Button 5")
+#         pick = 4  # Set data to "Thrust" when Button 5 is clicked
+#         graphing()
 
 def handle_entry_event(event):
     global active_entry
@@ -666,8 +703,6 @@ while run:
                 handle_general_menu_event(event)  # Call this function for the "General" menu
             elif menu_state == "limits":
                 handle_entry_event(event)
-            
-                
 
         elif event.type == pygame.QUIT:
             run = False
@@ -688,12 +723,6 @@ while run:
         draw_data_collection()
     elif menu_state == "Graph":
         draw_graph_buttons()
-        handle_graph_button_click(x, y)
-
-
-
-        
-        
     elif menu_state == "Custom Setup":
         draw_custom_setup()
         handle_custom_setup()
