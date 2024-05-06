@@ -6,6 +6,7 @@ from tkinter import Tk, filedialog
 import yaml
 import numpy as np
 from matplotlib import animation
+import time
 
 
 # Initialize serial connection
@@ -127,7 +128,7 @@ def read_serial_data():
             data = ser.readline().decode('UTF-8').strip()
             # print("Received data from Arduino:", data)  # Debug statement
             values = [float(value) for value in data.split("\t") if value.strip()]
-            # print("Parsed values:", values)  # Debug statement
+            print("Parsed values:", values)  # Debug statement
             if len(values) == 5:
                 data_values["Voltage"], data_values["Current"], data_values["Torque1"], data_values["Torque2"], data_values["Thrust"] = values
                 # print("Updated data values:", data_values)
@@ -246,7 +247,6 @@ def handle_data_collection_button_click(x, y):
 
 
 def handle_custom_setup():
-    # Add code here to handle events specific to the "Custom Setup" menu, if needed
     pass
 
 
@@ -260,7 +260,7 @@ def draw_custom_setup():
     browse_button_x = 400
     browse_button_y = 300
     pygame.draw.rect(screen, BOX_COLOR, (browse_button_x, browse_button_y, 200, 50), 2)
-    draw_text("Browse", font, TEXT_COL, browse_button_x + 10, browse_button_y + 10)
+    draw_text("Browse...", font, TEXT_COL, browse_button_x + 10, browse_button_y + 10)
 
     # Draw "Use" button
     use_button_x = 400
@@ -284,6 +284,8 @@ def draw_custom_setup():
             elif use_button_x <= x <= use_button_x + 200 and use_button_y <= y <= use_button_y + 50:
                 print("Clicked on Use Button")
                 use_file()
+                
+
             elif graph_button_x <= x <= graph_button_x + 200 and graph_button_y <= y <= graph_button_y + 50:
                 print("Clicked on Sample Graph Button")
                 plot_throttle_profile(use_file())
@@ -350,9 +352,9 @@ def choose_file():
 
 def use_file():
     with open(yaml_file_path, "r") as pp:
-        data = yaml.safe_load(pp)
-        print(data)
-    return data
+        custom_data = yaml.safe_load(pp)
+        print(custom_data)
+    return custom_data
 
 # Function to draw content in the "Data Collection" menu
 def draw_data_collection():
@@ -478,6 +480,38 @@ def draw_data_collection():
 #         data = yaml.SafeLoader(pp)
 #         print(data)
 
+def send_custom_to_arduino():
+    global yaml_file_path
+    
+    # Check if a YAML file path has been selected
+    if yaml_file_path:
+        with open(yaml_file_path, "r") as pp:
+            custom_data = yaml.safe_load(pp)
+            print("Loaded custom data:", custom_data)
+        
+        # Send "CUSTOM" string to Arduino
+        custom = "CUSTOM "
+        ser.write(custom.encode('utf-8'))
+        
+        # Extract data from custom_data dictionary
+        custom_data_list = list(custom_data.values())
+        custom_data_list = custom_data_list[1:]  # Skip the first element if needed
+        
+        # Convert data to a comma-separated string
+        data_str = ','.join(map(str, custom_data_list))
+        print("Data string:", data_str)
+        
+        fullcustom = "custom " + data_str 
+        # Send data string to Arduino
+        ser.write(fullcustom.encode('utf-8'))
+        
+        print("Sent data to Arduino")
+    else:
+        print("No YAML file selected. Please choose a YAML file first.")
+
+
+
+
 def handle_click(x, y):
     global receive_data, menu_state, active_entry, entry_box_x
 
@@ -537,7 +571,8 @@ def handle_click(x, y):
             choose_file()
         elif 400 <= x <= 600 and 370 <= y <= 420:  # Check if clicked on "Use" button
             print("Clicked on Use Button")
-            use_file()
+            send_custom_to_arduino()
+            
             # Add functionality for the "Use" button here
 
 
@@ -676,15 +711,17 @@ def handle_entry_event(event):
             # Update the active entry to the entry currently receiving keyboard input
             active_entry = (i, j)
 
-def save_data_to_csv(data):
+def save_data_to_csv(data, throttle_entry):
     try:
         with open(csv_file_path, mode="a", newline='') as file:
             writer = csv.writer(file)
             # Check if the file is empty and write the header if needed
-            if file.tell() == 0:
+            if file.tell() == 0: 
                 writer.writerow(csv_header)
-            writer.writerow(data)
+            # Append the throttle_entry along with the data
+            writer.writerow(data + [throttle_entry])
             print("Data saved to CSV file.")
+            
     except Exception as e:
         print(f"Error saving data to CSV file: {e}")
 
@@ -732,7 +769,8 @@ while run:
     draw_menu()
     if data_collection_active:
         data_to_save = [data_values[key] for key in csv_header]
-        save_data_to_csv(data_to_save)
+        save_data_to_csv(data_to_save, throttle_entry)
+        
 
     pygame.display.update()
 

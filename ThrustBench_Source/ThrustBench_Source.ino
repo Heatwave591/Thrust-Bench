@@ -6,6 +6,12 @@
 #define MAX_SIGNAL 2000
 #define MIN_SIGNAL 700
 #define servoPin 9
+
+#define MAX_VALUES 10  // Maximum number of values to store in the list (adjust as needed)
+
+int values[MAX_VALUES];  // Array to store the parsed values
+int valueIndex = 0;  // Index to keep track of the next available position in the array
+
 // byte potentiometerPin = A4;
 Servo motor;
 HX711 scale1;
@@ -16,6 +22,8 @@ String msg;
 
 int i;
 float voltage, current;
+
+int abc = 0;
 
 float voltage_min = 0;
 float voltage_max = 1000;
@@ -113,7 +121,7 @@ current_limit_max = tokens[4];
 
 void finddata() {
   current = analogRead(A0);
-  current = (current - 545);
+  current = (current - 625);
   // Serial.print(current);
   // Serial.print("\t"); 
 // sensorValue = analogRead(analogInputPin);
@@ -144,7 +152,7 @@ void finddata() {
 
 // if (voltage < voltage_min || voltage > voltage_max || current < current_min || current > current_max) {
 //   motor.writeMicroseconds(1000);
-//   digitalWrite(ERR, HIGH);
+//   //digitalWrite(ERR, HIGH);
 //   digitalWrite(LED, HIGH);
 // }
 
@@ -154,38 +162,170 @@ w3 = scale3.get_units(10);
 }
 
 void usedata() {
-// if (pwmValue <= 1120) {
-//   motor.writeMicroseconds(1000);
-//   voltage = 0;
-//   current = 0;
-// }
-
 if (Serial.available() > 0) {
-  String command = Serial.readStringUntil(' ');
-  if (command == "SET_THROTTLE") {
-    // Receive and process throttle value from the serial port
-    String throttleString = Serial.readStringUntil('\n');
-    receivedThrottleValue = throttleString.toFloat();
-    if (receivedThrottleValue >= 1049 && receivedThrottleValue <= 1900) {
-      motor.writeMicroseconds(receivedThrottleValue);
-    } else if (receivedThrottleValue <= 1050) {
-      motor.writeMicroseconds(1000);
-    } else if (receivedThrottleValue >= 1900) {
-      motor.writeMicroseconds(1900);
+    String command = Serial.readStringUntil(' '); // Read command until space
+
+    if (command == "SET_THROTTLE") {
+      // Receive and process throttle value from the serial port
+      String throttleString = Serial.readStringUntil('\n');
+      receivedThrottleValue = throttleString.toFloat();
+      if (receivedThrottleValue >= 1049 && receivedThrottleValue <= 1900) {
+        motor.writeMicroseconds(receivedThrottleValue);
+      } else if (receivedThrottleValue <= 1050) {
+        motor.writeMicroseconds(1000);
+      } else if (receivedThrottleValue >= 1900) {
+        motor.writeMicroseconds(1900);
+      }
+    } 
+    else if (command == "CUSTOM") {
+    digitalWrite(10, HIGH);
+    digitalWrite(11, HIGH);
+
+    if (Serial.available() > 0) {
+      String data = Serial.readStringUntil('\n');  // Read data until newline character
+
+      // Find the index of the first space to skip the command part (e.g., "CUSTOM")
+      int startIndex = data.indexOf(' ') + 1;
+      String stripped = data.substring(startIndex);
+
+      // Variables to store up to 7 extracted numbers
+      float number1 = 0.0;
+      float number2 = 0.0;
+      float number3 = 0.0;
+      float number4 = 0.0;
+      float number5 = 0.0;
+      float number6 = 0.0;
+      float number7 = 0.0;
+
+      // Parse the stripped string to extract numbers
+      int currentIndex = 0;
+      int commaIndex = stripped.indexOf(',');
+
+      // Extract the first number
+      if (commaIndex != -1) {
+        String currentNumberStr = stripped.substring(currentIndex, commaIndex);
+        number1 = currentNumberStr.toFloat();
+        currentIndex = commaIndex + 1;
+        commaIndex = stripped.indexOf(',', currentIndex);
+      } else {
+        String currentNumberStr = stripped.substring(currentIndex);
+        number1 = currentNumberStr.toFloat();
+      }
+
+      // Extract the second number
+      if (commaIndex != -1) {
+        String currentNumberStr = stripped.substring(currentIndex, commaIndex);
+        number2 = currentNumberStr.toFloat();
+        currentIndex = commaIndex + 1;
+        commaIndex = stripped.indexOf(',', currentIndex);
+      } else {
+        String currentNumberStr = stripped.substring(currentIndex);
+        number2 = currentNumberStr.toFloat();
+      }
+
+      // Extract the third number
+      if (commaIndex != -1) {
+        String currentNumberStr = stripped.substring(currentIndex, commaIndex);
+        number3 = currentNumberStr.toFloat();
+        currentIndex = commaIndex + 1;
+        commaIndex = stripped.indexOf(',', currentIndex);
+      } else {
+        String currentNumberStr = stripped.substring(currentIndex);
+        number3 = currentNumberStr.toFloat();
+      }
+
+      // Extract the fourth number
+      if (commaIndex != -1) {
+        String currentNumberStr = stripped.substring(currentIndex, commaIndex);
+        number4 = currentNumberStr.toFloat();
+        currentIndex = commaIndex + 1;
+        commaIndex = stripped.indexOf(',', currentIndex);
+      } else {
+        String currentNumberStr = stripped.substring(currentIndex);
+        number4 = currentNumberStr.toFloat();
+      }
+
+      // Extract the fifth number
+      if (commaIndex != -1) {
+        String currentNumberStr = stripped.substring(currentIndex, commaIndex);
+        number5 = currentNumberStr.toFloat();
+        currentIndex = commaIndex + 1;
+        commaIndex = stripped.indexOf(',', currentIndex);
+      } else {
+        String currentNumberStr = stripped.substring(currentIndex);
+        number5 = currentNumberStr.toFloat();
+      }
+
+      // Extract the sixth number
+      if (commaIndex != -1) {
+        String currentNumberStr = stripped.substring(currentIndex, commaIndex);
+        number6 = currentNumberStr.toFloat();
+        currentIndex = commaIndex + 1;
+        commaIndex = stripped.indexOf(',', currentIndex);
+      } else {
+        String currentNumberStr = stripped.substring(currentIndex);
+        number6 = currentNumberStr.toFloat();
+      }
+
+      // Extract the seventh number
+      if (commaIndex != -1) {
+        String currentNumberStr = stripped.substring(currentIndex, commaIndex);
+        number7 = currentNumberStr.toFloat();
+      } else {
+        String currentNumberStr = stripped.substring(currentIndex);
+        number7 = currentNumberStr.toFloat();
+      }
+
+      // Print the extracted numbers with two decimal places
+      Serial.println("Extracted Numbers:");
+      Serial.print(number1, 2);
+      Serial.print(" ");
+      Serial.print(number2, 2);
+      Serial.print(" ");
+      Serial.print(number3, 2);
+      Serial.print(" ");
+      Serial.print(number4, 2);
+      Serial.print(" ");
+      Serial.print(number5, 2);
+      Serial.print(" ");
+      Serial.print(number6, 2);
+      Serial.print(" ");
+      Serial.println(number7, 2);
     }
   }
-}
-if (voltage < voltage_min || voltage > voltage_max || current < current_min || current > current_max) {
-  // Stop the motor if any value exceeds the limits
-  digitalWrite(ERR, HIGH);
-  digitalWrite(LED, HIGH);
-}
+      // (Optional) Handle potential cases with more than 5 numbers (error handling)
 
-else {
-  motor.writeMicroseconds(receivedThrottleValue);
-  digitalWrite(ERR, LOW);
-  digitalWrite(LED, HIGH);
+        // // Parse the received data
+        // char* ptr = strtok((char*)data.c_str(), ",");
+        // while (ptr != NULL && valueIndex < MAX_VALUES) {
+        //   values[valueIndex++] = atoi(ptr);  // Convert token to integer and store in array
+        //   ptr = strtok(NULL, ",");
+        // }
+
+        // // Print the received values (for debugging)
+        // // Serial.println("Received values:");
+        // for (int i = 0; i < valueIndex; i++) {
+        //   // Serial.print("Value ");
+        //   // Serial.print(i);
+        //   // Serial.print(": ");
+        //   Serial.println(values[i]);
+        // }
+      
+
+      // Turn on ERR LED when CUSTOM command is received
+    
+  
 }
+  // Check voltage and current limits
+  if (voltage < voltage_min || voltage > voltage_max || current < current_min || current > current_max) {
+    // Stop the motor if any value exceeds the limits
+    //digitalWrite(LED, HIGH);
+  } else {
+    // Clear ERR LED and run the motor with the received throttle value
+    //digitalWrite(ERR, LOW);
+    //digitalWrite(LED, LOW);
+    motor.writeMicroseconds(receivedThrottleValue);
+  }
 }
 
 
@@ -218,11 +358,9 @@ void loop() {
   
 
   if (Serial.available() > 0) {
-    String msg = Serial.readString();
-    // Serial.print("Received message: ");
-    // Serial.println(msg);  // Debug print
-
-    if (msg == "HALT") {
+    String command = Serial.readString();
+    
+    if (command == "HALT") {
       HALT = !HALT;
     }
 
@@ -231,16 +369,17 @@ void loop() {
       processLimitsMessage(msg);
     }
 
+
   }
   finddata();
 
   if (HALT == true){
     motor.writeMicroseconds(1000);
-    digitalWrite(ERR, HIGH);
+    ////digitalWrite(ERR, HIGH);
   }
   else if (HALT == false) {
-    digitalWrite(ERR, LOW);
-    digitalWrite(LED, HIGH);
+    ////digitalWrite(ERR, LOW);
+    //digitalWrite(LED, HIGH);
     usedata();
   
 
@@ -249,19 +388,35 @@ void loop() {
 
   float savedThrottleValue = throttleValue;
 
-  // if (receivedThrottleValue <= 1050) {
-  //   current = 0.0;
-  //   voltage = 0.0;
+
+  current = (abs(current) / 10);
+  if (receivedThrottleValue < 1500){
+    current = abs(current - 3);
+  }
+  // else if (receivedThrottleValue >= 1500 && receivedThrottleValue < 1700){
+  //   current = abs(current) + 3;
   // }
+  else if (receivedThrottleValue >= 1700){
+    current = abs(current) + 6;
+  }
+  // current = abs(current - 2);
+  // current = abs(current-27);
+  voltage = current * 0.33;
+
+  if (receivedThrottleValue <= 1050) {
+    current = 0.0;
+    voltage = 0.0;
+  } 
+
   Serial.print(voltage, 2);
   Serial.print("\t");
-  Serial.print(abs(current)/10, 2);
+  Serial.print(current, 2);
   Serial.print("\t");
   Serial.print(w1);
   Serial.print("\t");
   Serial.print(w2);
   Serial.print("\t");
   Serial.println(w3);
-  delay(1000);
+  delay(200);
 }
 }
