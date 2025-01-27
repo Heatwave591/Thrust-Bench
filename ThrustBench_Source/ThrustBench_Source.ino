@@ -36,44 +36,42 @@
 
   int LED = 10;
   int ERR = 11;
-  const int analogInputPin = A7;  // Connect ACS758 output to A7
+  const int analogInputPin = A7;  
 
   float w1, w2, w3;
   int delta;
 
   float a, b, c, d;
-  float throttleValue = 1000.0;       // Initial throttle value
-  float receivedThrottleValue = 0.0;  // Variable to store received throttle value
+  float throttleValue = 1000.0;       
+  float receivedThrottleValue = 0.0;  
 
   // Define  limits
   float voltage_limit_min = 0.0;
-  float voltage_limit_max = 0.0;  // Adjust the maximum limit based on your application
+  float voltage_limit_max = 0.0;  
   float current_limit_min = 0.0;
-  float current_limit_max = 0.0;  // Adjust the maximum limit based on your application
+  float current_limit_max = 0.0;  
 
-  char msgBuffer[50]; // Buffer to hold the converted string
+  char msgBuffer[50];
   char *token;
 
-// Function to process LIMITS message
 
 void processLimitsMessage(String msg) {
-  // Serial.println("Received message: " + msg);
   
   // Convert String to char array
   char msgBuffer[50];
   msg.toCharArray(msgBuffer, sizeof(msgBuffer));
 
-  // Tokenize the message
+  // Tokenize message
   char *token = strtok(msgBuffer, " ");
-  float tokens[4]; // Array to hold tokens as floats
+  float tokens[4]; 
   int i = 0;
   while (token != NULL && i <= 4) {
-    // Convert token to float and store it in the tokens array
+    // Convert token to float 
     tokens[i] = atof(token);
     // Serial.print("Token ");
     // Serial.print(i);
     // Serial.print(": ");
-    // Serial.println(tokens[i], 3); // Print with 3 decimal places
+    // Serial.println(tokens[i], 3); 
     token = strtok(NULL, " ");
     i++;
   }
@@ -84,7 +82,6 @@ void processLimitsMessage(String msg) {
   current_limit_max = tokens[4];
   // Serial.print(voltage_limit_max);
   
-  // Now 'tokens' array holds the tokens as floats, you can use it as needed
 }
 
 
@@ -128,7 +125,6 @@ void usedata() {
   if (Serial.available() > 0) {
     String command = Serial.readStringUntil(' ');
     if (command == "SET_THROTTLE") {
-      // Receive and process throttle value from the serial port
       String throttleString = Serial.readStringUntil('\n');
       receivedThrottleValue = throttleString.toFloat();
       if (receivedThrottleValue >= 1049 && receivedThrottleValue <= 1900) {
@@ -141,7 +137,6 @@ void usedata() {
     }
   }
   if (voltage < voltage_min || voltage > voltage_max || current < current_min || current > current_max) {
-    // Stop the motor if any value exceeds the limits
     digitalWrite(ERR, HIGH);
     digitalWrite(LED, HIGH);
   }
@@ -168,7 +163,6 @@ void usedata() {
     pinMode(LED, OUTPUT);
     pinMode(ERR, OUTPUT);
 
-    // Load cell factor calibration; thrust bench
     scale1.set_scale(114980);
     scale1.tare();
 
@@ -206,9 +200,6 @@ void usedata() {
       digitalWrite(LED, HIGH);
       usedata();
     
-
-      // Check if values exceed limits
-
 
     float savedThrottleValue = throttleValue;
 
