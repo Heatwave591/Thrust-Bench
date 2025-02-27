@@ -1,4 +1,4 @@
-# Thrust Bench - User Manual
+# User Manual
 
 ## Introduction
 
