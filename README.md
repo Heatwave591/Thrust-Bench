@@ -43,10 +43,8 @@ This documentation introduces the purpose, design, and applications of the thrus
 
 ## Circuit Diagram
 
-(Unfortunately, the provided text does not contain a specific circuit diagram. However, it mentions connecting load sensors to HX711 ADCs, the ACS758 sensor, LEDs, and an optional potentiometer to the Arduino MEGA 2560. A detailed diagram should be added here when available.)
 
-
-![](Sources/Circuit_Diagram.png)
+![Fig: Circuit Diagram](Sources/Circuit_Diagram.png)
 
 ## Hardware Connections
 
