@@ -46,7 +46,7 @@ This documentation introduces the purpose, design, and applications of the thrus
 (Unfortunately, the provided text does not contain a specific circuit diagram. However, it mentions connecting load sensors to HX711 ADCs, the ACS758 sensor, LEDs, and an optional potentiometer to the Arduino MEGA 2560. A detailed diagram should be added here when available.)
 
 
-![alt text](http://www.github.com/Heatwave591/Thrust-Bench/Sources/Circuit_Diagram.png)
+![](Sources/Circuit_Diagram.png)
 
 ## Hardware Connections
 
